@@ -1,117 +1,160 @@
-//variáveis da bolinha
-let xBolinha = 300;
-let yBolinha = 200;
+//variáveis de dimensões da Bola:
+let xBola = 300;
+let yBola = 200;
 let diametro = 15;
-let raio = diametro / 2 ;
+let raio = diametro/2;
 
-//velocidade da bolinha
-let velocidadeXBolinha = 6;
-let velocidadeYBolinha = 6;
-let raqueteComprimento = 10;
-let raqueteAltura = 90;
+//variáveis de velocidade da Bola:
+let velXBola = 6;
+let velYBola = 6;
 
-//variáveis da raquete
+//variáveis de dimensões da Raquete:
 let xRaquete = 5;
 let yRaquete = 150;
+let wRaquete = 10;
+let hRaquete = 90;
 
-//variáveis do oponente
+//variáveis da Raquete do Oponente:
 let xRaqueteOponente = 585;
 let yRaqueteOponente = 150;
-let velocidadeYOponente;
+let velYRaqueteOponente;
 
-let colidiu = false;
+//variáveis de movimento da Minha Raquete:
+let w = 87;
+let s = 83;
 
-//placar do jogo
+//variáveis da biblioteca (p5.collide2d):
+let colidir = false
+
+//placar do jogo:
 let meusPontos = 0;
-let pontosDoOponente = 0;
+let pontosOponente = 0;
 
+//sons do jogo:
+let trilha;
+let meuPonto;
+let oponentePonto;
+let raquetada;
+
+function preload() {
+  trilha = loadSound ("Space Ambience.wav");
+  meuPonto = loadSound ("Meu Ponto.wav");
+  oponentePonto = loadSound ("Oponente Ponto.wav");
+  raquetada = loadSound ("Pong.wav");
+}
+
+//inicia programa (setup) e define dimensões de pixels (createCanvas): 
 function setup() {
   createCanvas(600, 400);
+  trilha.loop();
 }
 
+//draw executa chamada de funções continuamente nas linhas de códigos:
 function draw() {
-  background(0);
-  mostraBolinha();
-  movimentaBolinha();
-  verificaColisaoBorda();
-  mostraRaquete(xRaquete, yRaquete);
-  movimentaMinhaRaquete();
-  //verificaColisaoRaquete();
-  verificaColisaoRaquete(xRaquete, yRaquete);
-  mostraRaquete(xRaqueteOponente, yRaqueteOponente);
-  movimentaRaqueteOponente();
-  verificaColisaoRaquete(xRaqueteOponente, yRaqueteOponente);
-  incluiPlacar();
-  marcaPonto();
+  background(0); //desenha o fundo
+  mostraBola(); //forma a bola
+  movimentoBola(); //move a bola
+  configColisaoBorda(); //verifica colisão da bola com as bordas
+  mostraRaquete(xRaquete, yRaquete); //forma minha raquete
+  mostraRaquete(xRaqueteOponente, yRaqueteOponente); //forma raquete do oponente
+  movimentoMinhaRaquete(); //move a minha raquete
+  movimentoRaqueteOponente(); //move automatico a raquete do oponente
+  //multiplayer();//move com setas (cima e baixo) a raquete do oponente
+  //configColisaoRaquete(); //afere a colisão da bola com raquetes
+  colisaoRaqueteBiblioteca(xRaquete, yRaquete);
+  colisaoRaqueteBiblioteca(xRaqueteOponente, yRaqueteOponente);           //afere colisão das raquetes por via da biblioteca do GitHub
+  incluirPlacar(); //posiciona os placares do Pong
+  marcarPonto(); //armazena as pontuações
 }
 
-function mostraBolinha(){
-  circle(xBolinha, yBolinha, diametro);
+function mostraBola() {
+   circle (xBola, yBola, diametro);
 }
 
-function movimentaBolinha(){
-  xBolinha += velocidadeXBolinha;
-  yBolinha += velocidadeYBolinha;
+function movimentoBola() {
+  xBola += velXBola;
+  yBola += velYBola;
 }
 
-function verificaColisaoBorda(){
-  if (xBolinha + raio> width ||
-     xBolinha - raio< 0){
-    velocidadeXBolinha *= -1;
+function configColisaoBorda() {
+  if(xBola + raio > width || 
+     xBola - raio < 0) {
+    velXBola *= -1; 
   }
-  if (yBolinha + raio> height ||
-     yBolinha - raio < 0){
-    velocidadeYBolinha *= -1;
+  if(yBola + raio > height || 
+     yBola - raio < 0) {
+    velYBola *= -1;
   }
 }
 
-function mostraRaquete(x,y){
-  rect(x, y, raqueteComprimento, 
-      raqueteAltura);
+//refatoração na forma das raquetes em função única:
+function mostraRaquete(x, y) {
+  rect(x, y, wRaquete, hRaquete);
 }
 
-function movimentaMinhaRaquete(){
-  if (keyIsDown(UP_ARROW)){
+function movimentoMinhaRaquete() {
+  if (keyIsDown(w) && yRaquete > 0) {
     yRaquete -= 10;
   }
-  if (keyIsDown(DOWN_ARROW)){
+  if (keyIsDown(s) && yRaquete < height - hRaquete) {
     yRaquete += 10;
   }
 }
 
-function verificaColisaoRaquete(){
-  if (xBolinha - raio < xRaquete + raqueteComprimento && 
-      yBolinha - raio < yRaquete + raqueteAltura && 
-      yBolinha + raio > yRaquete){
-    velocidadeXBolinha *= -1;
+//refatoração no movimento da raquete do oponente. aplicação de função polinomial de 1º grau para ter possibilidade de marcação de pontos:
+function movimentoRaqueteOponente() {
+  //quanto maior a porcentagem (20% ou 0.2) maior chance de colisão na raquete
+  velYRaqueteOponente = (yBola - yRaqueteOponente - wRaquete / 2) * 0.2;
+  yRaqueteOponente += velYRaqueteOponente;
+}
+
+function multiplayer() {
+  if (keyIsDown (UP_ARROW) && yRaqueteOponente > 0) {
+    yRaqueteOponente-=10;
+  }
+  if (keyIsDown (DOWN_ARROW) && yRaqueteOponente < height - hRaquete) {
+    yRaqueteOponente += 10
   }
 }
 
-function verificaColisaoRaquete(x, y){
-  colidiu = collideRectCircle(x, y,raqueteComprimento,raqueteAltura,
-                              xBolinha,yBolinha,raio);
-  if (colidiu){
-    velocidadeXBolinha *= -1;
+function configColisaoRaquete() {
+  if(xBola - raio < xRaquete + wRaquete
+    && yBola - raio < yRaquete + hRaquete
+    && yBola + raio > yRaquete) {
+    velXBola *= -1;
   }
 }
 
-function movimentaRaqueteOponente(){
-  velocidadeYOponente = yBolinha - yRaqueteOponente - raqueteComprimento / 2 - 30;
-  yRaqueteOponente += velocidadeYOponente
+//refatoração na colisão da bola com as raquetes em função única:
+function colisaoRaqueteBiblioteca(x, y) {
+  colidir =
+  collideRectCircle(x, y, wRaquete, hRaquete, xBola, yBola, raio);
+  if(colidir) {
+    velXBola *= -1;
+    raquetada.play();
+  }
 }
 
-function incluiPlacar(){
+function incluirPlacar() {
+  stroke(255);
+  textAlign(CENTER);
+  textSize(16);
+  fill(color(255, 140, 0));
+  rect(150, 10, 40, 20);
+  rect(450, 10, 40, 20);
   fill(255);
-  text(meusPontos, 278, 26);
-  text(pontosDoOponente, 321, 26)
+  text(meusPontos, 170, 26);
+  text(pontosOponente, 470, 26);
 }
 
-function marcaPonto(){
-  if (xBolinha > 590){
+function marcarPonto() {
+  if (xBola > 590) {
     meusPontos += 1;
+    meuPonto.play ();
   }
-  if (xBolinha < 10){
-    pontosDoOponente += 1;
+  if (xBola <10) {
+    pontosOponente += 1;
+    oponentePonto.play();
   }
 }
 
